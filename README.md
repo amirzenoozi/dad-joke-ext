@@ -215,9 +215,9 @@ Publishing is automated by [`.github/workflows/release.yml`](.github/workflows/r
 Bump `version` in `package.json`, then push a matching tag:
 
 ```bash
-# e.g. for version 2.0.0
-git tag v2.0.0
-git push origin v2.0.0
+# e.g. for version 2.0
+git tag v2.0
+git push origin v2.0
 ```
 
 The workflow verifies the tag matches `package.json`, type-checks, zips all three

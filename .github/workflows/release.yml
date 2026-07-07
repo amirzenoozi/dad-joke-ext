@@ -1,6 +1,6 @@
 name: Release
 
-# Publishes to the stores when a version tag is pushed (e.g. v2.0.0), or when
+# Publishes to the stores when a version tag is pushed (e.g. v2.0), or when
 # run manually. Each store step is skipped unless its secrets are configured,
 # so this works with Chrome only, Firefox only, or any combination.
 on:
