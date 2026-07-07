@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dad Joke</title>
+  </head>
+  <body>
+    <main class="stage">
+      <!-- Time-of-day gradient: three slowly drifting blobs, coloured by main.ts -->
+      <div class="bg" aria-hidden="true">
+        <span class="blob blob--1"></span>
+        <span class="blob blob--2"></span>
+        <span class="blob blob--3"></span>
+      </div>
+
+      <!-- The card + its "Another one" button, stacked and centred. The button
+           lives outside the card so it isn't part of the downloaded image. -->
+      <div class="card-wrap">
+      <!-- The card is wrapped in a frame that stays invisible on screen but gets
+           50px of padding applied during image export (see main.ts). -->
+      <div class="card-frame" id="card-frame">
+      <!-- One card, restyled per theme. The bits below are shown/hidden by CSS
+           depending on data-theme; #joke is always present. -->
+      <section class="joke" aria-label="Dad joke">
+        <!-- Window title bar — Terminal & DOS -->
+        <div class="bar" aria-hidden="true">
+          <span class="bar__dots"><i></i><i></i><i></i></span>
+          <span class="bar__title"></span>
+        </div>
+
+        <!-- Author row — Twitter -->
+        <div class="tw-head" aria-hidden="true">
+          <span class="tw-avatar">🥸</span>
+          <span class="tw-id">
+            <span class="tw-name"
+              >Dad Joke<svg class="tw-badge" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z"
+                /></svg
+            ></span>
+            <span class="tw-handle">@dadjokes</span>
+          </span>
+          <span class="tw-more" aria-hidden="true">···</span>
+        </div>
+
+        <!-- Header row — Basic -->
+        <div class="head" aria-hidden="true">
+          <span class="head__brand">😄 Dad&nbsp;Joke</span>
+          <span class="head__clock" id="clock">--:--</span>
+        </div>
+
+        <p class="joke__text" id="joke" aria-live="polite">Loading a fresh one…</p>
+
+        <!-- Timestamp + action row — Twitter -->
+        <div class="tw-foot" aria-hidden="true">
+          <time class="tw-time" id="tw-time"></time>
+          <div class="tw-actions">
+            <span class="tw-act">💬 <b>12</b></span>
+            <span class="tw-act">🔁 <b>34</b></span>
+            <span class="tw-act">♥ <b>2.5K</b></span>
+            <span class="tw-act">📊 <b>18K</b></span>
+          </div>
+        </div>
+
+      </section>
+      </div>
+
+        <button class="again" id="again" type="button">
+          <span class="again__icon" aria-hidden="true">↻</span>
+          <span class="again__label">Another one</span>
+        </button>
+
+        <!-- Recent bookmarks (filled by main.ts; hidden until there are any). -->
+        <nav class="bookmarks" id="bookmarks" aria-label="Recent bookmarks" hidden></nav>
+      </div>
+
+      <!-- Theme, language + dark-mode switcher, docked bottom-centre. -->
+      <nav class="switcher" aria-label="Appearance">
+        <div class="switcher__themes" id="themes"></div>
+        <span class="switcher__sep" aria-hidden="true"></span>
+        <button class="mode lang" id="lang" type="button" hidden></button>
+        <button class="mode" id="mode" type="button" aria-label="Change dark mode"></button>
+        <button class="mode" id="download" type="button" aria-label="Download card as image" data-tip="Download card as image">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3v12" />
+            <path d="m7 10 5 5 5-5" />
+            <path d="M5 21h14" />
+          </svg>
+        </button>
+      </nav>
+
+      <p class="credit">
+        via <a id="source" href="https://icanhazdadjoke.com/" target="_blank" rel="noopener noreferrer">icanhazdadjoke.com</a>
+      </p>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
