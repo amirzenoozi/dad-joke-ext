@@ -28,8 +28,9 @@ export default defineConfig({
       // `Access-Control-Allow-Origin: *`, so no host permission is required.
       browser_specific_settings: {
         gecko: {
-          // Required by AMO. Change to your own id before publishing.
-          id: 'dad-joke@amirzenoozi.dev',
+          // Must match the existing AMO add-on GUID so releases update the
+          // published "Dad Joke" listing rather than creating a new one.
+          id: '{e1c4022c-3a75-4ee3-99b0-7fcacdc9b1c8}',
           // We don't collect or transmit any user data — declare so for AMO.
           // (Firefox-only key; WXT strips browser_specific_settings for Chrome.)
           data_collection_permissions: {
