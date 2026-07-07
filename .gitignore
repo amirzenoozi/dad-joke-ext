@@ -1,0 +1,14 @@
+node_modules
+.output
+.wxt
+*.zip
+.DS_Store
+.env*
+stats.html
+
+# IDE / editor
+.idea
+.vscode
+
+# Claude Code local settings
+.claude/settings.local.json

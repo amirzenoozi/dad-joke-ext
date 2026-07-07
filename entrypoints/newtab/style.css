@@ -1,0 +1,843 @@
+/* ==========================================================================
+   Dad Joke — themed New Tab
+   One card, four personalities. main.ts sets --g1/2/3, --accent and --ink from
+   the time-of-day palette; data-theme picks the card style, data-mode surfaces.
+   ========================================================================== */
+
+:root {
+  --font-sans:
+    system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-round: ui-rounded, 'SF Pro Rounded', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Fira Code', Menlo, Consolas, monospace;
+
+  /* Set live by main.ts. */
+  --g1: #4b2c73;
+  --g2: #3a1c5a;
+  --g3: #221046;
+  --accent: #a78bfa;
+  --ink: #f5f6ff;
+  --ink-dim: rgba(245, 246, 255, 0.66);
+
+  /* Chrome (switcher + credit) ink; themes may pin this independent of the sky. */
+  --chrome-ink: var(--ink);
+
+  /* One card width shared by every theme, for consistency. */
+  --card-w: min(560px, 92vw);
+
+  /* Frosted card surface for Basic, keyed to dark mode below. */
+  --surface: rgba(255, 255, 255, 0.5);
+  --surface-line: rgba(255, 255, 255, 0.55);
+  --card-ink: #1b1e2e;
+  --card-ink-dim: rgba(27, 30, 46, 0.62);
+}
+
+html[data-mode='dark'] {
+  --surface: rgba(18, 20, 34, 0.44);
+  --surface-line: rgba(255, 255, 255, 0.12);
+  --card-ink: #f5f6ff;
+  --card-ink-dim: rgba(245, 246, 255, 0.66);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--ink);
+  background: #12123a;
+  overflow: hidden;
+}
+
+.stage {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(20px, 5vw, 64px);
+}
+
+/* ---- Time-of-day gradient ------------------------------------------------ */
+
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+  background: var(--g3);
+  transition: background 1.5s linear;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.9;
+  transition: background 1.5s linear;
+  will-change: transform;
+}
+
+.blob--1 {
+  width: 72vmax;
+  height: 72vmax;
+  top: -22vmax;
+  left: -16vmax;
+  background: var(--g1);
+  animation: drift1 26s ease-in-out infinite alternate;
+}
+
+.blob--2 {
+  width: 62vmax;
+  height: 62vmax;
+  bottom: -22vmax;
+  right: -16vmax;
+  background: var(--g2);
+  animation: drift2 32s ease-in-out infinite alternate;
+}
+
+.blob--3 {
+  width: 52vmax;
+  height: 52vmax;
+  top: 50%;
+  left: 50%;
+  background: var(--accent);
+  opacity: 0.5;
+  transform: translate(-50%, -50%);
+  animation: drift3 38s ease-in-out infinite alternate;
+}
+
+@keyframes drift1 {
+  to {
+    transform: translate(8vw, 6vh) scale(1.15);
+  }
+}
+@keyframes drift2 {
+  to {
+    transform: translate(-7vw, -5vh) scale(1.12);
+  }
+}
+@keyframes drift3 {
+  from {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    transform: translate(-42%, -58%) scale(1.22);
+  }
+}
+
+/* ---- Card (shared) ------------------------------------------------------- */
+
+/* Card + its (external) button, stacked and centred. */
+.card-wrap {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: var(--card-w);
+  max-width: 92vw;
+}
+
+/* Invisible on screen; export adds 50px padding to it (see main.ts). */
+.card-frame {
+  display: flex;
+  width: 100%;
+}
+
+.joke {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  border-radius: 24px;
+  box-shadow: 0 30px 80px rgba(2, 6, 23, 0.28);
+  overflow: hidden;
+}
+
+/* Theme-specific chrome is hidden until its theme opts in. */
+.bar,
+.tw-head,
+.head,
+.tw-foot {
+  display: none;
+}
+
+.joke__text {
+  margin: 0;
+  transition: opacity 0.25s ease;
+}
+
+.joke__text--loading {
+  opacity: 0.4;
+}
+
+.again {
+  /* Sits below the card, centred, 25px down — shared by every theme. */
+  margin-top: 25px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.2s ease,
+    filter 0.2s ease;
+}
+
+.again:active {
+  transform: translateY(1px);
+}
+
+.again:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.again__icon {
+  transition: transform 0.4s ease;
+}
+
+.again:hover .again__icon {
+  transform: rotate(180deg);
+}
+
+/* ---- Switcher + credit --------------------------------------------------- */
+
+.switcher {
+  position: fixed;
+  bottom: clamp(16px, 3vh, 28px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chrome-ink) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--chrome-ink) 16%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.switcher__themes {
+  display: flex;
+  gap: 8px;
+}
+
+.swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.swatch:hover {
+  transform: scale(1.14);
+}
+
+.swatch--active {
+  border-color: var(--chrome-ink);
+  transform: scale(1.14);
+}
+
+.switcher__sep {
+  width: 1px;
+  height: 20px;
+  background: color-mix(in srgb, var(--chrome-ink) 22%, transparent);
+}
+
+.mode {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--chrome-ink);
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.mode:hover {
+  background: color-mix(in srgb, var(--chrome-ink) 14%, transparent);
+}
+
+/* Language toggle: a compact code chip (e.g. "DE") that dims when off. */
+.lang {
+  width: auto;
+  min-width: 28px;
+  padding: 0 9px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 999px;
+}
+
+.lang--off {
+  opacity: 0.42;
+  text-decoration: line-through;
+}
+
+.lang[hidden] {
+  display: none;
+}
+
+/* ---- Tooltips ------------------------------------------------------------ */
+/* Custom pill tooltips (theme names + button labels), rising on hover/focus. */
+
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]::after,
+[data-tip]::before {
+  position: absolute;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.16s ease,
+    transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
+  z-index: 30;
+}
+
+.switcher [data-tip]::after {
+  content: attr(data-tip);
+  bottom: calc(100% + 13px);
+  transform: translate(-50%, 5px);
+  padding: 7px 11px;
+  border-radius: 9px;
+  background: rgba(20, 22, 33, 0.96);
+  color: #f4f5ff;
+  font: 600 12px/1 var(--font-sans);
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.34);
+}
+
+.switcher [data-tip]::before {
+  content: '';
+  bottom: calc(100% + 7px);
+  transform: translate(-50%, 5px);
+  border: 6px solid transparent;
+  border-top-color: rgba(20, 22, 33, 0.96);
+}
+
+[data-tip]:hover::after,
+[data-tip]:hover::before,
+[data-tip]:focus-visible::after,
+[data-tip]:focus-visible::before {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.credit {
+  position: fixed;
+  bottom: clamp(16px, 3vh, 28px);
+  right: clamp(16px, 3vw, 28px);
+  margin: 0;
+  z-index: 5;
+  font-size: 12px;
+  color: var(--chrome-ink);
+  opacity: 0.6;
+}
+
+.credit a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--chrome-ink) 35%, transparent);
+}
+
+.credit a:hover {
+  opacity: 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--chrome-ink);
+  outline-offset: 3px;
+}
+
+/* ---- Recent bookmarks ---------------------------------------------------- */
+/* Quick-launch circles under the card. Sits on the gradient, so it uses
+   --chrome-ink (which each theme keeps legible against its background). */
+
+.bookmarks {
+  margin-top: 26px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  max-width: 100%;
+}
+
+.bookmarks[hidden] {
+  display: none;
+}
+
+.bm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  width: 62px;
+  text-decoration: none;
+  color: var(--chrome-ink);
+}
+
+.bm__disc {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #fff 28%, transparent);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.28);
+  transition: transform 0.15s ease;
+}
+
+.bm:hover .bm__disc {
+  transform: translateY(-2px) scale(1.06);
+}
+
+.bm__img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #fff;
+}
+
+.bm__disc--img .bm__mono {
+  opacity: 0;
+}
+
+.bm__label {
+  width: 100%;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.82;
+}
+
+/* ==========================================================================
+   Theme: Basic — frosted card on the dreamy gradient
+   ========================================================================== */
+
+html[data-theme='basic'] .joke {
+  background: var(--surface);
+  border: 1px solid var(--surface-line);
+  backdrop-filter: blur(30px) saturate(140%);
+  color: var(--card-ink);
+  padding: clamp(24px, 4vw, 36px);
+  gap: clamp(20px, 3vh, 28px);
+}
+
+html[data-theme='basic'] .head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+html[data-theme='basic'] .head__brand {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--card-ink);
+}
+
+html[data-theme='basic'] .head__clock {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--card-ink-dim);
+}
+
+html[data-theme='basic'] .joke__text {
+  color: var(--card-ink);
+  font-family: var(--font-round);
+  font-weight: 650;
+  font-size: clamp(24px, 3.4vw, 38px);
+  line-height: 1.28;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+html[data-theme='basic'] .again {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  border-radius: 999px;
+  padding: 12px 22px;
+  backdrop-filter: blur(8px);
+}
+
+html[data-theme='basic'] .again:hover {
+  background: color-mix(in srgb, var(--accent) 36%, transparent);
+}
+
+/* ==========================================================================
+   Theme: Terminal — macOS terminal window, always dark
+   ========================================================================== */
+
+html[data-theme='terminal'] {
+  --chrome-ink: #cdd6e0;
+}
+
+html[data-theme='terminal'] .bg {
+  background: #0b0f14;
+}
+
+html[data-theme='terminal'] .blob {
+  opacity: 0.32;
+  filter: blur(120px);
+}
+
+html[data-theme='terminal'] .joke {
+  background: #0c1116;
+  border: 1px solid #1c2530;
+  font-family: var(--font-mono);
+}
+
+html[data-theme='terminal'] .bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #111820;
+  border-bottom: 1px solid #1c2530;
+}
+
+.bar__dots {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.bar__dots i {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+html[data-theme='terminal'] .bar__dots i:nth-child(1) {
+  background: #ff5f57;
+}
+html[data-theme='terminal'] .bar__dots i:nth-child(2) {
+  background: #febc2e;
+}
+html[data-theme='terminal'] .bar__dots i:nth-child(3) {
+  background: #28c840;
+}
+
+.bar__title {
+  font: 12px/1 var(--font-mono);
+  color: #7d8a99;
+}
+
+html[data-theme='terminal'] .bar__title {
+  margin-left: 8px;
+}
+
+html[data-theme='terminal'] .bar__title::before {
+  content: 'dadjoke — zsh';
+}
+
+html[data-theme='terminal'] .joke__text {
+  font-family: var(--font-mono);
+  color: #e6edf3;
+  font-size: clamp(15px, 1.9vw, 20px);
+  line-height: 1.6;
+  padding: 20px 22px 8px;
+}
+
+html[data-theme='terminal'] .joke__text::before {
+  content: '$ dadjoke --random\A';
+  white-space: pre;
+  color: #3fb950;
+}
+
+html[data-theme='terminal'] .joke__text::after {
+  content: '▋';
+  margin-left: 6px;
+  color: #3fb950;
+  animation: blink 1.1s step-end infinite;
+}
+
+html[data-theme='terminal'] .again {
+  font-family: var(--font-mono);
+  color: #3fb950;
+  background: rgba(12, 17, 22, 0.8);
+  border: 1px solid #23303c;
+  border-radius: 6px;
+  padding: 8px 14px;
+}
+
+html[data-theme='terminal'] .again:hover {
+  background: color-mix(in srgb, #3fb950 14%, transparent);
+}
+
+/* ==========================================================================
+   Theme: DOS — retro MS-DOS blue screen
+   ========================================================================== */
+
+html[data-theme='dos'] .joke {
+  background: #0000aa;
+  color: #ffffff;
+  font-family: var(--font-mono);
+  border: 2px solid #dedede;
+  border-radius: 0;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.45);
+}
+
+html[data-theme='dos'] .bar {
+  display: block;
+  padding: 4px 10px;
+  background: #aaaaaa;
+  color: #0000aa;
+  text-align: center;
+  font: 700 13px/1.4 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+html[data-theme='dos'] .bar__dots {
+  display: none;
+}
+
+html[data-theme='dos'] .bar__title::before {
+  content: '■ DADJOKE.EXE ■';
+}
+
+html[data-theme='dos'] .joke__text {
+  color: #ffff55;
+  font-family: var(--font-mono);
+  font-size: clamp(15px, 2vw, 21px);
+  line-height: 1.55;
+  padding: 22px 22px 10px;
+}
+
+html[data-theme='dos'] .joke__text::before {
+  content: 'C:\\JOKES>DADJOKE\A';
+  white-space: pre;
+  color: #55ffff;
+}
+
+html[data-theme='dos'] .joke__text::after {
+  content: '█';
+  margin-left: 4px;
+  color: #ffffff;
+  animation: blink 1s step-end infinite;
+}
+
+html[data-theme='dos'] .again {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0000aa;
+  background: #aaaaaa;
+  border: 2px solid #ffffff;
+  border-radius: 0;
+  padding: 6px 14px;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.4);
+}
+
+html[data-theme='dos'] .again:hover {
+  background: #ffffff;
+}
+
+html[data-theme='dos'] .again__icon {
+  display: none;
+}
+
+html[data-theme='dos'] .again__label::before {
+  content: '[ ';
+}
+html[data-theme='dos'] .again__label::after {
+  content: ' ]';
+}
+
+/* ==========================================================================
+   Theme: Twitter — presented as a tweet
+   ========================================================================== */
+
+html[data-theme='twitter'] {
+  --tw-bg: #ffffff;
+  --tw-fg: #0f1419;
+  --tw-sub: #536471;
+  --tw-line: #eff3f4;
+  --tw-blue: #1d9bf0;
+}
+
+html[data-theme='twitter'][data-mode='dark'] {
+  --tw-bg: #15202b;
+  --tw-fg: #e7e9ea;
+  --tw-sub: #8b98a5;
+  --tw-line: #2f3336;
+}
+
+html[data-theme='twitter'] .joke {
+  background: var(--tw-bg);
+  color: var(--tw-fg);
+  border: 1px solid var(--tw-line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  gap: 12px;
+  font-family: var(--font-sans);
+}
+
+html[data-theme='twitter'] .tw-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tw-avatar {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  background: var(--tw-line);
+}
+
+.tw-id {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.tw-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  color: var(--tw-fg);
+}
+
+.tw-badge {
+  width: 18px;
+  height: 18px;
+  color: var(--tw-blue);
+}
+
+.tw-handle {
+  color: var(--tw-sub);
+  font-size: 15px;
+}
+
+.tw-more {
+  margin-left: auto;
+  align-self: flex-start;
+  color: var(--tw-sub);
+  font-weight: 700;
+}
+
+html[data-theme='twitter'] .joke__text {
+  color: var(--tw-fg);
+  font-size: clamp(20px, 2.6vw, 26px);
+  line-height: 1.35;
+  font-weight: 400;
+}
+
+html[data-theme='twitter'] .tw-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tw-time {
+  color: var(--tw-sub);
+  font-size: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--tw-line);
+}
+
+.tw-actions {
+  display: flex;
+  justify-content: space-between;
+  color: var(--tw-sub);
+  font-size: 13px;
+}
+
+.tw-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tw-act b {
+  font-weight: 400;
+}
+
+html[data-theme='twitter'] .again {
+  color: #ffffff;
+  background: var(--tw-blue);
+  border: none;
+  border-radius: 999px;
+  font-weight: 700;
+  padding: 10px 20px;
+}
+
+html[data-theme='twitter'] .again:hover {
+  filter: brightness(0.93);
+}
+
+/* ---- Shared cursor blink ------------------------------------------------- */
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ---- Reduced motion ------------------------------------------------------ */
+
+@media (prefers-reduced-motion: reduce) {
+  .blob {
+    animation: none;
+  }
+  .again__icon {
+    transition: none;
+  }
+  html[data-theme='terminal'] .joke__text::after,
+  html[data-theme='dos'] .joke__text::after {
+    animation: none;
+  }
+  /* Fade tooltips in place, without the rise. */
+  [data-tip]::after,
+  [data-tip]::before {
+    transition: opacity 0.16s ease;
+    transform: translate(-50%, 0);
+  }
+}
