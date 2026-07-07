@@ -1,7 +1,7 @@
 {
   "name": "dad-joke-ext",
   "description": "A minimal New Tab extension that greets you with a fresh dad joke from icanhazdadjoke.com.",
-  "version": "2.0.0",
+  "version": "2.0",
   "type": "module",
   "private": true,
   "author": "Amir Douzandeh (https://github.com/amirzenoozi)",
